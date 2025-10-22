@@ -1,0 +1,35 @@
+
+set {
+  root {
+    PROTOBUF_C_PROTO
+  }
+  SS { protobuf-c.proto }
+}
+
+set {
+  root {
+    LIBPROTOBUF_C_A
+  }
+  CC { libprotobuf-c.a }
+}
+
+set {
+  SOURCES
+  protobuf-c.c
+}
+
+cc {
+  ${SOURCES}
+  ${CFLAGS}
+  ${CC}
+}
+
+run {
+  exec { ${AR} rcs ${LIBPROTOBUF_C_A} ${CC_OBJS} }
+  consumes {
+    ${CC_OBJS}
+  }
+  produces {
+    ${LIBPROTOBUF_C_A}
+  }
+}

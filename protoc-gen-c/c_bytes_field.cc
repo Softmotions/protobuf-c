@@ -64,7 +64,7 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/wire_format.h>
 
-#include <protobuf-c/protobuf-c.pb.h>
+#include <protobuf-c.pb.h>
 
 #include "c_bytes_field.h"
 #include "c_helpers.h"

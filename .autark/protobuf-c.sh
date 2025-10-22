@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+
+PROTOBUF_PROTOC_EXECUTABLE=$(which protoc)
+autark set "PROTOBUF_PROTOC_EXECUTABLE=${PROTOBUF_PROTOC_EXECUTABLE}"
+

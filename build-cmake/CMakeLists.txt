@@ -102,7 +102,7 @@ target_compile_features(protobuf-c PRIVATE cxx_std_17)
 if(BUILD_PROTOC)
   include_directories(${CMAKE_CURRENT_BINARY_DIR}) # for generated files
 endif()
-
+ble
 if(MSVC AND NOT BUILD_SHARED_LIBS)
   # In case we are building static libraries, link also the runtime library
   # statically so that MSVCR*.DLL is not required at runtime.

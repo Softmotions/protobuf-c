@@ -72,7 +72,7 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/wire_format.h>
 
-#include <protobuf-c/protobuf-c.pb.h>
+#include <protobuf-c.pb.h>
 
 #include "c_enum.h"
 #include "c_extension.h"

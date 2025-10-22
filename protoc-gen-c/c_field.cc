@@ -65,7 +65,7 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/stubs/common.h>
 
-#include <protobuf-c/protobuf-c.pb.h>
+#include <protobuf-c.pb.h>
 
 #include "c_bytes_field.h"
 #include "c_enum_field.h"

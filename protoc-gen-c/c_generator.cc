@@ -68,7 +68,7 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 
-#include <protobuf-c/protobuf-c.pb.h>
+#include <protobuf-c.pb.h>
 #include "c_file.h"
 #include "c_generator.h"
 #include "c_helpers.h"

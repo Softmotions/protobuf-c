@@ -33,6 +33,7 @@
 #include "c_generator.h"
 #include "c_helpers.h"
 #include "compat.h"
+#include "config.h"
 
 int main(int argc, char* argv[]) {
   protobuf_c::CGenerator c_generator;

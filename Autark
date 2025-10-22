@@ -1,0 +1,82 @@
+meta {
+  name { protobuf-c }
+  version { 1.5.3 }
+  website { https://github.com/Softmotions/protobuf-c }
+}
+
+option { BUILD_TYPE               Build type: Release|Debug }
+option { ENABLE_DEBINFO           Generate debuginfo even in release mode }
+option { PBUFC_BUILD_TESTS        Build test cases }
+option { PBUFC_RUN_TESTS          Build and run test cases }
+
+if { !defined { BUILD_TYPE }
+  set {
+    BUILD_TYPE Release
+  }
+}
+
+if { ${PBUFC_RUN_TESTS}
+  set {
+    PBUFC_BUILD_TESTS 1
+  }
+}
+
+env {
+  PKG_CONFIG_PATH
+  C{${INSTALL_PKGCONFIG_DIR}}
+}
+
+check {
+  system.sh
+  protobuf-c.sh
+}
+
+if { ${SYSTEM_BIGENDIAN} 
+  set {
+    WORDS_BIGENDIAN 1
+  }
+}
+
+configure {
+  config.h.in
+}
+
+set {
+  XFLAGS
+  if { ${WORDS_BIGENDIAN} 
+    -DWORDS_BIGENDIAN
+  }
+  if { prefix { ${BUILD_TYPE} Debug }
+    -O0
+    -g
+    -DDEBUG -D_DEBUG -UNDEBUG
+  } else {
+    -O3
+    if { ${ENABLE_DEBINFO}
+      -g -ggdb
+    }
+    -DNDEBUG
+  }
+  -I C{}
+  -I S{}
+  -I S{protobuf-c}
+}
+
+set {
+  CFLAGS
+  ..${XFLAGS}
+}
+
+set {
+  CXXFLAGS
+  -std=c++17
+  ..${XFLAGS}
+  if { contains {${CXX} clang}
+    # https://github.com/abseil/abseil-cpp/issues/1747  
+    -fclang-abi-compat=17
+  }
+}
+
+include { protobuf-c/Autark }
+include { protoc-gen-c/Autark }
+
