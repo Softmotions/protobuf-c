@@ -6,8 +6,8 @@ meta {
 
 option { BUILD_TYPE               Build type: Release|Debug }
 option { ENABLE_DEBINFO           Generate debuginfo even in release mode }
-option { PBUFC_BUILD_TESTS        Build test cases }
-option { PBUFC_RUN_TESTS          Build and run test cases }
+option { PBC_BUILD_TESTS          Build test cases }
+option { PBC_RUN_TESTS            Build and run test cases }
 
 if { !defined { BUILD_TYPE }
   set {
@@ -15,9 +15,9 @@ if { !defined { BUILD_TYPE }
   }
 }
 
-if { ${PBUFC_RUN_TESTS}
+if { ${PBC_RUN_TESTS}
   set {
-    PBUFC_BUILD_TESTS 1
+    PBC_BUILD_TESTS 1
   }
 }
 
@@ -34,6 +34,12 @@ check {
 if { ${SYSTEM_BIGENDIAN} 
   set {
     WORDS_BIGENDIAN 1
+  }
+}
+
+if { eq { ${BUILD_TYPE} Release }
+  set {
+    STRIP_CMD strip --strip-debug
   }
 }
 
@@ -79,4 +85,8 @@ set {
 
 include { protobuf-c/Autark }
 include { protoc-gen-c/Autark }
+
+if { ${PBC_BUILD_TESTS} 
+  include { t/Autark }
+}
 

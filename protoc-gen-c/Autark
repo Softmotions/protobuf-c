@@ -1,3 +1,6 @@
+if { !library { LIBPROTOC libprotoc.so }
+  error { Library libprotoc ${LIBPROTOC} not found }
+}
 
 run {
   exec { ${PROTOBUF_PROTOC_EXECUTABLE} --cpp_out CC{} -I SS{} -I S{protobuf-c} ${PROTOBUF_C_PROTO} }
@@ -20,7 +23,7 @@ set {
   LDFLAGS
   ..${LDFLAGS}
   ..@@{ ${PKGCONF} --libs protobuf }
-  -l ${LIBPROTOBUF_C_A}
+  -lprotoc
 }
 
 set {
@@ -46,4 +49,25 @@ cxx {
   ${SOURCES}
   ${CXXFLAGS}
   ${CXX}
+  consumes {
+    C{config.h}
+  }
 }
+
+run {
+  exec { ${CXX} -o protoc-gen-c ${LDFLAGS} ${LIBPROTOBUF_C_A} ${CXX_OBJS} }
+  if { ${STRIP_CMD} 
+    exec { ${STRIP_CMD} protoc-gen-c }
+  }
+  consumes {
+    ${CXX_OBJS}
+  }
+}
+
+install {
+  ${INSTALL_BIN_DIR}
+  protoc-gen-c
+}
+
+
+

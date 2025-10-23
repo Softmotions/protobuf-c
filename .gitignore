@@ -1,3 +1,4 @@
+.cache/
 autark-cache/
 compile_commands.json
 *~

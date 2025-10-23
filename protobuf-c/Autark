@@ -22,6 +22,9 @@ cc {
   ${SOURCES}
   ${CFLAGS}
   ${CC}
+  consumes {
+    C{config.h}
+  }
 }
 
 run {
@@ -33,3 +36,6 @@ run {
     ${LIBPROTOBUF_C_A}
   }
 }
+
+install { ${INSTALL_LIB_DIR} ${LIBPROTOBUF_C_A} }
+install { ${INSTALL_INCLUDE_DIR} protobuf-c.h protobuf-c.proto }
