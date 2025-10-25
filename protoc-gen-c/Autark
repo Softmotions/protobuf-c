@@ -2,16 +2,6 @@ if { !library { LIBPROTOC libprotoc.so }
   error { Library libprotoc ${LIBPROTOC} not found }
 }
 
-run {
-  exec { ${PROTOBUF_PROTOC_EXECUTABLE} --cpp_out CC{} -I SS{} -I S{protobuf-c} ${PROTOBUF_C_PROTO} }
-  consumes {
-    ${PROTOBUF_C_PROTO}
-  }
-  produces {
-    CC{protobuf-c.pb.cc}
-    CC{protobuf-c.pb.h}
-  }
-}
 
 set {
   CXXFLAGS
@@ -42,7 +32,7 @@ set {
   c_service.cc
   c_string_field.cc
   main.cc
-  CC{protobuf-c.pb.cc}
+  C{protobuf-c/protobuf-c.pb.cc}
 }
 
 cxx {
@@ -62,6 +52,13 @@ run {
   consumes {
     ${CXX_OBJS}
   }
+}
+
+set {
+  root {
+    PROTOC_GEN_C_EXEC
+  }
+  CC{protoc-gen-c}
 }
 
 install {

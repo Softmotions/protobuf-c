@@ -64,7 +64,7 @@
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/io/printer.h>
 
-#include <protobuf-c.pb.h>
+#include <protobuf-c/protobuf-c.pb.h>
 #include "protobuf-c.h"
 
 #include "c_enum.h"

@@ -1,11 +1,3 @@
-
-set {
-  root {
-    PROTOBUF_C_PROTO
-  }
-  SS { protobuf-c.proto }
-}
-
 set {
   root {
     LIBPROTOBUF_C_A
@@ -37,5 +29,6 @@ run {
   }
 }
 
+
 install { ${INSTALL_LIB_DIR} ${LIBPROTOBUF_C_A} }
-install { ${INSTALL_INCLUDE_DIR} protobuf-c.h protobuf-c.proto }
+install { ${PBC_PUBLIC_HEADERS_DESTINATION} protobuf-c.h protobuf-c.proto }

@@ -4,10 +4,17 @@ meta {
   website { https://github.com/Softmotions/protobuf-c }
 }
 
-option { BUILD_TYPE               Build type: Release|Debug }
-option { ENABLE_DEBINFO           Generate debuginfo even in release mode }
-option { PBC_BUILD_TESTS          Build test cases }
-option { PBC_RUN_TESTS            Build and run test cases }
+option { BUILD_TYPE                       Build type: Release|Debug }
+option { ENABLE_DEBINFO                   Generate debuginfo even in release mode }
+option { PBC_BUILD_TESTS                  Build test cases }
+option { PBC_RUN_TESTS                    Build and run test cases }
+option { PBC_PUBLIC_HEADERS_DESTINATION   Installation path relative to INSTALL_PREFIX for public proto and header files. }
+
+if { !defined { PBC_PUBLIC_HEADERS_DESTINATION }
+  set {
+    PBC_PUBLIC_HEADERS_DESTINATION ^{ ${INSTALL_INCLUDE_DIR} / ${META_NAME} }
+  }
+}
 
 if { !defined { BUILD_TYPE }
   set {
@@ -80,6 +87,17 @@ set {
   if { contains {${CXX} clang}
     # https://github.com/abseil/abseil-cpp/issues/1747  
     -fclang-abi-compat=17
+  }
+}
+
+run {
+  exec { ${PROTOBUF_PROTOC_EXEC} --cpp_out CC{} -I S{} protobuf-c/protobuf-c.proto }
+  consumes {
+    protobuf-c/protobuf-c.proto 
+  }
+  produces {
+    CC{protobuf-c/protobuf-c.pb.cc}
+    CC{protobuf-c/protobuf-c.pb.h}
   }
 }
 

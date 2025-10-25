@@ -18,7 +18,7 @@ endif()
 find_package(Protobuf CONFIG)
 if(Protobuf_FOUND)
   # Keep compatibility with FindProtobuf CMake module
-  set(PROTOBUF_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc>)
+  set(PROTOBUF_PROTOC_EXEC $<TARGET_FILE:protobuf::protoc>)
   get_target_property(PROTOBUF_INCLUDE_DIR protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
 else()
   message(STATUS "Protobuf CMake config not found fallback to Cmake Module")
@@ -156,7 +156,7 @@ if(BUILD_PROTOC)
     protoc-generated-files
     COMMAND
       ${CMAKE_COMMAND} -E env PATH="${OS_PATH_VARIABLE}"
-      ${PROTOBUF_PROTOC_EXECUTABLE} --cpp_out ${CMAKE_CURRENT_BINARY_DIR}
+      ${PROTOBUF_PROTOC_EXEC} --cpp_out ${CMAKE_CURRENT_BINARY_DIR}
       -I${MAIN_DIR} -I${PROTOBUF_INCLUDE_DIR}
       ${MAIN_DIR}/protobuf-c/protobuf-c.proto
     COMMENT Running
@@ -181,7 +181,7 @@ if(BUILD_PROTOC)
 
   if(MSVC AND BUILD_SHARED_LIBS)
     target_compile_definitions(protoc-gen-c PRIVATE -DPROTOBUF_USE_DLLS)
-    get_filename_component(PROTOBUF_DLL_DIR ${PROTOBUF_PROTOC_EXECUTABLE}
+    get_filename_component(PROTOBUF_DLL_DIR ${PROTOBUF_PROTOC_EXEC}
                            DIRECTORY)
     file(GLOB PROTOBUF_DLLS ${PROTOBUF_DLL_DIR}/*.dll)
     file(COPY ${PROTOBUF_DLLS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -192,7 +192,7 @@ if(BUILD_PROTOC)
       OUTPUT ${SRC} ${HDR}
       COMMAND
         ${CMAKE_COMMAND} ARGS -E env PATH="${OS_PATH_VARIABLE}"
-        ${PROTOBUF_PROTOC_EXECUTABLE} --plugin=$<TARGET_FILE_NAME:protoc-gen-c>
+        ${PROTOBUF_PROTOC_EXEC} --plugin=$<TARGET_FILE_NAME:protoc-gen-c>
         -I${MAIN_DIR} ${PROTO_FILE} --c_out=${CMAKE_CURRENT_BINARY_DIR}
       DEPENDS protoc-gen-c)
   endfunction()
@@ -211,7 +211,7 @@ if(BUILD_PROTOC)
       OUTPUT t/test-full.pb.cc t/test-full.pb.h
       COMMAND
         ${CMAKE_COMMAND} ARGS -E env PATH="${OS_PATH_VARIABLE}"
-        ${PROTOBUF_PROTOC_EXECUTABLE} --cpp_out ${CMAKE_CURRENT_BINARY_DIR}
+        ${PROTOBUF_PROTOC_EXEC} --cpp_out ${CMAKE_CURRENT_BINARY_DIR}
         -I${MAIN_DIR} ${TEST_DIR}/test-full.proto)
 
     generate_test_sources(${TEST_DIR}/test-full.proto t/test-full.pb-c.c

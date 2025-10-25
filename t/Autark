@@ -1,0 +1,184 @@
+set {
+  GEN_C_SOURCES
+  CC{test-full.pb-c.c}
+  CC{test-optimized.pb-c.c}
+  CC{test.pb-c.c}
+  CC{test-proto3.pb-c.c}
+  CC{issue220/issue220.pb-c.c}
+  CC{issue251/issue251.pb-c.c}
+}
+
+set {
+  GEN_CXX_SOURCES
+  CC{test-full.pb.cc}
+}
+
+run {
+  exec { 
+    ${PROTOBUF_PROTOC_EXEC} 
+    -I S{}
+    -I SS{}
+    --plugin ${PROTOC_GEN_C_EXEC} 
+    --c_out CC{}
+    test.proto
+    test-full.proto
+    test-optimized.proto
+    issue220/issue220.proto
+    issue251/issue251.proto
+  }
+  exec {
+    ${PROTOBUF_PROTOC_EXEC} 
+    -I S{}
+    -I SS{}
+    --plugin ${PROTOC_GEN_C_EXEC} 
+    --c_out CC{}
+    test-proto3.proto
+  }
+  consumes {
+    ${PROTOC_GEN_C_EXEC}
+  }
+  produces {
+    CC{test-full.pb-c.h}
+    CC{test-optimized.pb-c.h}
+    CC{test-proto3.pb-c.h}
+    CC{test.pb-c.h}
+    CC{t/issue220/issue220.pb-c.h}
+    CC{t/issue251/issue251.pb-c.h}
+    ..${GEN_C_SOURCES}
+  }
+}
+
+run {
+  exec {
+    ${PROTOBUF_PROTOC_EXEC} 
+    -I S{}
+    -I SS{}
+    --cpp_out CC{}
+    test-full.proto
+  }
+  produces {
+    CC{test-full.pb.h}
+    ..${GEN_CXX_SOURCES}
+  }
+}
+
+set {
+  CSOURCES
+  ..${GEN_C_SOURCES}
+  generated-code/test-generated-code.c
+  generated-code2/test-generated-code2.c
+  issue220/issue220.c
+  issue251/issue251.c
+}
+
+set {
+  CXXSOURCES
+  ..${GEN_CXX_SOURCES}
+  generated-code2/cxx-generate-packed-data.cc
+}
+
+set {
+  CXXFLAGS
+  ..${CXXFLAGS}
+  ..@@{ ${PKGCONF} --cflags protobuf }
+}
+
+cc {
+  ${CSOURCES}
+  ${CFLAGS}
+  ${CC}
+  consumes {
+    CC{generated-code2/test-full-cxx-output.inc} 
+  }
+}
+
+cxx {
+  ${CXXSOURCES}
+  ${CXXFLAGS}
+  ${CXX}
+}
+
+run {
+  exec { ${CC} -o test-generated-code ${LDFLAGS} test.pb-c.o generated-code/test-generated-code.o ${LIBPROTOBUF_C_A} }
+  consumes {
+    ${CC_OBJS}
+    ${LIBPROTOBUF_C_A} 
+  }
+}
+
+run {
+  exec { ${CXX} -o cxx-generate-packed-data 
+         set{_ ..${LDFLAGS} ..@@{ ${PKGCONF} --libs protobuf }}
+         C{protobuf-c/protobuf-c.pb.o}
+         CC{test-full.pb.o}
+         CC{generated-code2/cxx-generate-packed-data.o} 
+  }
+  produces {
+    cxx-generate-packed-data  
+  }
+  consumes {
+    ${CXX_OBJS}
+    C{protobuf-c/protobuf-c.pb.o}
+  }
+}
+
+run {
+  shell { CC{cxx-generate-packed-data} > CC{generated-code2/test-full-cxx-output.inc} }
+  consumes {
+    cxx-generate-packed-data
+  }
+  produces {
+    set {
+      FULL_CXX_OUTPUT_INC
+      CC{generated-code2/test-full-cxx-output.inc} 
+    }
+  }
+}
+
+run {
+  exec { ${CC} -o test-generated-code2 ${LDFLAGS} 
+    generated-code2/test-generated-code2.o
+    test-full.pb-c.o 
+    test-optimized.pb-c.o 
+    ${LIBPROTOBUF_C_A} 
+  }
+  consumes {
+    ${CC_OBJS}
+    ${LIBPROTOBUF_C_A} 
+    ${FULL_CXX_OUTPUT_INC}
+  }
+  produces {
+    test-generated-code2 
+  }
+}
+
+run {
+  exec { ${CC} -o test-issue220 ${LDFLAGS}
+    issue220/issue220.o
+    issue220/issue220.pb-c.o
+    ${LIBPROTOBUF_C_A}
+  }
+  consumes {
+    ${CC_OBJS}
+    ${LIBPROTOBUF_C_A}
+  }
+  produces {
+    test-issue220
+  }
+}
+
+run {
+  exec { ${CC} -o test-issue251 ${LDFLAGS}
+    issue251/issue251.o
+    issue251/issue251.pb-c.o
+    ${LIBPROTOBUF_C_A}
+  }
+  consumes {
+    ${CC_OBJS}
+    ${LIBPROTOBUF_C_A}
+  }
+  produces {
+    test-issue251
+  }
+}
+
