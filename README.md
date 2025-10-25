@@ -5,7 +5,7 @@ This is `protobuf-c`, a C implementation of the [Google Protocol Buffers](https:
 ## Building
 
 ```
-    ./build.sh --prefix=<install prefix>
+./build.sh --prefix=<install prefix>
 ```
 
 ## Synopsis
