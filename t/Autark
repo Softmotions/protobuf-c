@@ -1,3 +1,5 @@
+# Not yet implemented
+
 set {
   GEN_C_SOURCES
   CC{test-full.pb-c.c}
