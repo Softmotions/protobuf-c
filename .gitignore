@@ -20,7 +20,6 @@ compile_commands.json
 /aclocal.m4
 /autom4te.cache
 /build-aux
-/config.*
 /configure
 /doxygen-doc
 /html
