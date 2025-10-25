@@ -1,6 +1,7 @@
 meta {
   name { protobuf-c }
   version { 1.5.3 }
+  description { Protocol Buffers implementation in C }
   website { https://github.com/Softmotions/protobuf-c }
 }
 

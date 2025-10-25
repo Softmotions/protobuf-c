@@ -1,13 +1,11 @@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@
-bindir=@bindir@
+prefix=@INSTALL_PREFIX@
+exec_prefix=@INSTALL_PREFIX@/@INSTALL_BIN_DIR@
+libdir=@INSTALL_PREFIX@/@INSTALL_LIB_DIR@
+includedir=@INSTALL_PREFIX@/@PBC_PUBLIC_HEADERS_DESTINATION@
 
-Name: @PACKAGE_NAME@
-Description: @PACKAGE_DESCRIPTION@
-Version: @PACKAGE_VERSION@
-URL: @PACKAGE_URL@
-Libs: -L${libdir} -lprotobuf-c
+Name: @META_NAME@
+Description: @META_DESCRIPTION@
+URL: @META_WEBSITE@
+Libs: -L${libdir} -l${artifact}
 Libs.private:
-Cflags: -I${includedir}
+Cflags: -I@INSTALL_PREFIX@/@INSTALL_INCLUDE_DIR@ -I${includedir}

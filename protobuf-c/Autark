@@ -29,6 +29,10 @@ run {
   }
 }
 
+configure {
+  libprotobuf-c.pc.in
+}
 
 install { ${INSTALL_LIB_DIR} ${LIBPROTOBUF_C_A} }
 install { ${PBC_PUBLIC_HEADERS_DESTINATION} protobuf-c.h protobuf-c.proto }
+install { ${INSTALL_PKGCONFIG_DIR} libprotobuf-c.pc }
