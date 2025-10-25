@@ -1,3 +1,7 @@
+# [1.5.3] 
+
+* Merged `support optional keyword & presence checker (has_ booleans)` https://github.com/protobuf-c/protobuf-c/pull/781
+
 # [1.5.2] - 2025-04-06
 
 ## What's Changed
