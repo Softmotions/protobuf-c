@@ -6,7 +6,7 @@
 # https://github.com/Softmotions/autark
 
 META_VERSION=0.9.0
-META_REVISION=de3b58a
+META_REVISION=170d75f
 cd "$(cd "$(dirname "$0")"; pwd -P)"
 
 prev_arg=""
@@ -62,7 +62,7 @@ cat <<'a292effa503b' > ${AUTARK_HOME}/autark.c
 #ifndef CONFIG_H
 #define CONFIG_H
 #define META_VERSION "0.9.0"
-#define META_REVISION "de3b58a"
+#define META_REVISION "170d75f"
 #endif
 #define _AMALGAMATE_
 #define _XOPEN_SOURCE 700
@@ -392,6 +392,8 @@ int map_iter_next(struct map_iter*);
 #include <string.h>
 #include <sys/types.h>
 #endif
+#define Q_XSTR(s) Q_STR(s)
+#define Q_STR(s)  #s
 static inline bool utils_char_is_space(char c) {
   return c == 32 || (c >= 9 && c <= 13);
 }
@@ -752,6 +754,8 @@ int node_error_setup(struct node*);
 int node_echo_setup(struct node*);
 int node_install_setup(struct node*);
 int node_find_setup(struct node*);
+int node_macro_setup(struct node*);
+int node_call_setup(struct node*);
 #endif
 #ifndef AUTARK_H
 #define AUTARK_H
@@ -796,10 +800,12 @@ void autark_build_prepare(const char *script_path);
 #define NODE_TYPE_ERROR      0x100000U
 #define NODE_TYPE_ECHO       0x200000U
 #define NODE_TYPE_INSTALL    0x400000U
+#define NODE_TYPE_MACRO      0x800000U
+#define NODE_TYPE_CALL       0x1000000U
 #define NODE_FLG_BOUND      0x01U
 #define NODE_FLG_INIT       0x02U
 #define NODE_FLG_SETUP      0x04U
-#define NODE_FLG_UPDATED    0x08U // Node product updated as result of build
+// Vacant: 0x08U
 #define NODE_FLG_BUILT      0x10U // Node built
 #define NODE_FLG_POST_BUILT 0x20U // Node post-built
 #define NODE_FLG_IN_CACHE   0x40U
@@ -867,6 +873,7 @@ void node_product_add(struct node*, const char *prod, char pathbuf[PATH_MAX]);
 void node_product_add_raw(struct node*, const char *prod);
 void node_reset(struct node *n);
 const char* node_value(struct node *n);
+int node_visit(struct node *n, int lvl, void *ctx, int (*visitor)(struct node*, int, void*));
 void node_module_setup(struct node *n, unsigned flags);
 void node_init(struct node *n);
 void node_setup(struct node *n);
@@ -912,6 +919,8 @@ void node_fatal(int rc, struct node *n, const char *fmt, ...);
 void node_info(struct node *n, const char *fmt, ...);
 void node_warn(struct node *n, const char *fmt, ...);
 int node_error(int rc, struct node *n, const char *fmt, ...);
+struct node* node_clone_and_register(struct node*);
+int node_bind(struct node*);
 #endif
 #ifndef _AMALGAMATE_
 #include "xstr.h"
@@ -5230,6 +5239,9 @@ static void _echo(struct node *n) {
       }
     }
   }
+  if (g_env.check.log) {
+    xstr_printf(g_env.check.log, "%s: %s\n", n->name, xstr_ptr(xstr));
+  }
   node_info(n, "%s", xstr_ptr(xstr));
   xstr_destroy(xstr);
 }
@@ -5625,6 +5637,156 @@ int node_find_setup(struct node *n) {
   n->init = _find_init;
   n->value_get = _find_value_get;
   n->dispose = _find_dispose;
+  return 0;
+}
+#ifndef _AMALGAMATE_
+#include "script.h"
+#endif
+static void _macro_remove(struct node *n) {
+  struct node *prev = node_find_prev_sibling(n);
+  if (prev) {
+    prev->next = n->next;
+  } else {
+    n->parent->child = n->next;
+  }
+}
+static void _macro_init(struct node *n) {
+  struct unit *unit = unit_peek();
+  const char *key = node_value(n->child);
+  if (!key || key[0] == '\0') {
+    node_warn(n, "No name specified for 'macro' directive");
+    return;
+  }
+  _macro_remove(n);
+  unit_env_set_node(unit, key, n);
+}
+int node_macro_setup(struct node *n) {
+  n->flags |= NODE_FLG_NO_CWD;
+  n->init = _macro_init;
+  return 0;
+}
+#ifndef _AMALGAMATE_
+#include "script.h"
+#include "utils.h"
+#include "alloc.h"
+#include "ulist.h"
+#endif
+#define MACRO_MAX_ARGS_NUM 64
+struct _call {
+  const char  *key;    ///< Macro name
+  struct node *n;      ///< Call Parent node
+  struct node *mn;     ///< Macro node
+  struct node *prev;   ///< Call Prev node
+  struct node *cloned; ///< Macro cloned node
+  struct ulist nodes;  ///< Nodes stack. struct node*
+  struct node *args[MACRO_MAX_ARGS_NUM];
+  int nn_idx;
+};
+static int _call_macro_visit(struct node *n, int lvl, void *d) {
+  struct _call *call = d;
+  if (call->mn == n /*skip macro itself */ || call->mn->child == n /* skip macro name */) {
+    return 0;
+  }
+  if (lvl < 0) {
+    ulist_pop(&call->nodes);
+    return 0;
+  }
+  // Macro arg
+  if (n->value[0] == '&' && n->value[1] == '\0' && n->child && !n->child->next) {
+    int rc = 0;
+    int idx = utils_strtol(n->child->value, 10, &rc);
+    if (rc || idx < 1 || idx >= MACRO_MAX_ARGS_NUM) {
+      node_fatal(rc, n, "Invalid macro arg index: %d", idx);
+      return 0;
+    }
+    n->child = 0; // Do not traverse arg index
+    idx--;
+    n = call->args[idx];
+    if (!n) {
+      node_fatal(rc, call->n, "Call argument: %d for macro: %s is not set", (idx + 1), call->key);
+      return 0;
+    }
+  }
+  struct node *parent = *(struct node**) ulist_peek(&call->nodes);
+  if (call->nn_idx == -1) {
+    call->nn_idx = n->ctx->nodes.num;
+  }
+  struct node *nn = node_clone_and_register(n);
+  nn->parent = parent;
+  // Add node to the parent
+  if (!parent->child) {
+    parent->child = nn;
+  } else {
+    struct node *c = parent->child;
+    while (c && c->next) {
+      c = c->next;
+    }
+    c->next = nn;
+  }
+  ulist_push(&call->nodes, &nn);
+  return 0;
+}
+static void _call_remove(struct node *n) {
+  struct node *prev = node_find_prev_sibling(n);
+  if (prev) {
+    prev->next = n->next;
+  } else {
+    n->parent->child = n->next;
+  }
+}
+static void _call_init(struct node *n) {
+  struct unit *unit = unit_peek();
+  const char *key = node_value(n->child);
+  if (!key || key[0] == '\0') {
+    node_warn(n, "No name specified for 'call' directive");
+    return;
+  }
+  struct node *mn = unit_env_get_node(unit, key);
+  if (!mn) {
+    node_fatal(0, n, "Unknown script macro: %s", key);
+    return;
+  }
+  struct _call *call = xcalloc(1, sizeof(*call));
+  call->nn_idx = -1;
+  call->key = key;
+  call->mn = mn;
+  call->n = n;
+  call->prev = node_find_prev_sibling(n);
+  ulist_init(&call->nodes, 16, sizeof(struct node*));
+  n->impl = call;
+  int idx = 0;
+  struct node *next = 0;
+  for (struct node *pn = n->child->next; pn; pn = next) {
+    next = pn->next;
+    if (idx >= MACRO_MAX_ARGS_NUM) {
+      node_fatal(0, n, "Exceeded the maximum number of macro args: " Q_STR(MACRO_MAX_ARGS_NUM));
+      return;
+    }
+    pn->next = 0;
+    call->args[idx++] = pn;
+  }
+  ulist_push(&call->nodes, &n->parent);
+  _call_remove(n);
+  int rc = node_visit(mn, 1, call, _call_macro_visit);
+  if (rc) {
+    node_fatal(rc, n, 0);
+  }
+  for (int i = call->nn_idx; i < n->ctx->nodes.num; ++i) {
+    struct node *nn = *(struct node**) ulist_get(&n->ctx->nodes, i);
+    node_bind(nn);
+  }
+}
+static void _call_dispose(struct node *n) {
+  struct _call *call = n->impl;
+  if (call) {
+    ulist_destroy_keep(&call->nodes);
+    free(call);
+  }
+}
+int node_call_setup(struct node *n) {
+  n->flags |= NODE_FLG_NO_CWD;
+  n->init = _call_init;
+  n->dispose = _call_dispose;
   return 0;
 }
 #ifndef _AMALGAMATE_
@@ -7183,6 +7345,10 @@ static unsigned _rule_type(const char *key, unsigned *flags) {
     return NODE_TYPE_INSTALL;
   } else if (strcmp(key, "library") == 0) {
     return NODE_TYPE_FIND;
+  } else if (strcmp(key, "macro") == 0) {
+    return NODE_TYPE_MACRO;
+  } else if (strcmp(key, "call") == 0) {
+    return NODE_TYPE_CALL;
   } else {
     return NODE_TYPE_BAG;
   }
@@ -7270,6 +7436,28 @@ static struct xnode* _node_text(struct  _yycontext *yy, const char *text) {
 static struct xnode* _node_text_push(struct  _yycontext *yy, const char *text) {
   return _push_and_register(yy, _node_text(yy, text));
 }
+int node_bind(struct node *n) {
+  return _node_bind(n);
+}
+struct node* node_clone_and_register(struct node *n_) {
+  struct sctx *ctx = n_->ctx;
+  struct xnode *n = (struct xnode*) n_;
+  struct xnode *x = pool_calloc(g_env.pool, sizeof(*x));
+  *x = *n;
+  x->base.flags = 0;
+  x->base.child = 0;
+  x->base.next = 0;
+  x->base.parent = 0;
+  x->base.impl = 0;
+  x->base.value_get = 0;
+  x->base.init = 0;
+  x->base.setup = 0;
+  x->base.build = 0;
+  x->base.post_build = 0;
+  x->base.dispose = 0;
+  _node_register(ctx, x);
+  return (struct node*) x;
+}
 static char* _text_escaped(char *wp, const char *rp) {
   // Replace: \} \{ \n \r \t
   int esc = 0;
@@ -7352,6 +7540,9 @@ static int _node_visit(struct node *n, int lvl, void *ctx, int (*visitor)(struct
     }
   }
   return visitor(n, -lvl, ctx);
+}
+int node_visit(struct node *n, int lvl, void *ctx, int (*visitor)(struct node*, int, void*)) {
+  return _node_visit(n, lvl, ctx, visitor);
 }
 static void _preprocess_script(struct value *v) {
   const char *p = v->buf;
@@ -7481,15 +7672,15 @@ static void _script_destroy(struct sctx *s) {
 }
 static int _node_bind(struct node *n) {
   int rc = 0;
-  // Tree has been built since its safe to compute node name
-  if (n->type != NODE_TYPE_SCRIPT) {
-    n->name = pool_printf(g_env.pool, "%s:%-3u %5s", _node_file(n), n->lnum, n->value);
-  } else {
-    n->name = pool_printf(g_env.pool, "%s     %5s", _node_file(n), "");
-  }
-  n->vfile = pool_printf(g_env.pool, ".%u", n->index);
   if (!(n->flags & NODE_FLG_BOUND)) {
     n->flags |= NODE_FLG_BOUND;
+    // Tree has been built since its safe to compute node name
+    if (n->type != NODE_TYPE_SCRIPT) {
+      n->name = pool_printf(g_env.pool, "%s:%-3u %5s", _node_file(n), n->lnum, n->value);
+    } else {
+      n->name = pool_printf(g_env.pool, "%s     %5s", _node_file(n), "");
+    }
+    n->vfile = pool_printf(g_env.pool, ".%u", n->index);
     switch (n->type) {
       case NODE_TYPE_SCRIPT:
         rc = node_script_setup(n);
@@ -7551,6 +7742,12 @@ static int _node_bind(struct node *n) {
       case NODE_TYPE_FIND:
         rc = node_find_setup(n);
         break;
+      case NODE_TYPE_MACRO:
+        rc = node_macro_setup(n);
+        break;
+      case NODE_TYPE_CALL:
+        rc = node_call_setup(n);
+        break;
     }
     switch (n->type) {
       case NODE_TYPE_RUN:
@@ -7598,7 +7795,7 @@ const char* node_value(struct node *n) {
   }
 }
 void node_reset(struct node *n) {
-  n->flags &= ~(NODE_FLG_UPDATED | NODE_FLG_BUILT | NODE_FLG_SETUP | NODE_FLG_INIT);
+  n->flags &= ~(NODE_FLG_BUILT | NODE_FLG_SETUP | NODE_FLG_INIT);
 }
 static void _init_subnodes(struct node *n) {
   int c;
@@ -7635,9 +7832,15 @@ void node_init(struct node *n) {
       case NODE_TYPE_INCLUDE:
       case NODE_TYPE_FOREACH:
       case NODE_TYPE_IN_SOURCES:
+      case NODE_TYPE_MACRO:
+      case NODE_TYPE_CALL:
         _node_context_push(n);
         n->init(n);
-        _init_subnodes(n);
+        if (n->type == NODE_TYPE_CALL) {
+          _init_subnodes(n->parent);
+        } else if (n->type != NODE_TYPE_MACRO) {
+          _init_subnodes(n);
+        }
         _node_context_pop(n);
         break;
       default:

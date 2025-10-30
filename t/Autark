@@ -1,13 +1,9 @@
-# Not yet implemented
-
 set {
   GEN_C_SOURCES
-  CC{test-full.pb-c.c}
-  CC{test-optimized.pb-c.c}
   CC{test.pb-c.c}
+  CC{test-optimized.pb-c.c}
+  CC{test-full.pb-c.c}
   CC{test-proto3.pb-c.c}
-  CC{issue220/issue220.pb-c.c}
-  CC{issue251/issue251.pb-c.c}
 }
 
 set {
@@ -23,10 +19,8 @@ run {
     --plugin ${PROTOC_GEN_C_EXEC} 
     --c_out CC{}
     test.proto
-    test-full.proto
     test-optimized.proto
-    issue220/issue220.proto
-    issue251/issue251.proto
+    test-full.proto
   }
   exec {
     ${PROTOBUF_PROTOC_EXEC} 
@@ -40,12 +34,10 @@ run {
     ${PROTOC_GEN_C_EXEC}
   }
   produces {
-    CC{test-full.pb-c.h}
-    CC{test-optimized.pb-c.h}
-    CC{test-proto3.pb-c.h}
     CC{test.pb-c.h}
-    CC{t/issue220/issue220.pb-c.h}
-    CC{t/issue251/issue251.pb-c.h}
+    CC{test-optimized.pb-c.h}
+    CC{test-full.pb-c.h}
+    CC{test-proto3.pb-c.h}
     ..${GEN_C_SOURCES}
   }
 }
@@ -65,47 +57,18 @@ run {
 }
 
 set {
-  CSOURCES
-  ..${GEN_C_SOURCES}
-  generated-code/test-generated-code.c
-  generated-code2/test-generated-code2.c
-  issue220/issue220.c
-  issue251/issue251.c
-}
-
-set {
-  CXXSOURCES
-  ..${GEN_CXX_SOURCES}
-  generated-code2/cxx-generate-packed-data.cc
-}
-
-set {
   CXXFLAGS
   ..${CXXFLAGS}
   ..@@{ ${PKGCONF} --cflags protobuf }
 }
 
-cc {
-  ${CSOURCES}
-  ${CFLAGS}
-  ${CC}
-  consumes {
-    CC{generated-code2/test-full-cxx-output.inc} 
-  }
-}
-
 cxx {
-  ${CXXSOURCES}
+  set {_
+    generated-code2/cxx-generate-packed-data.cc
+    ..${GEN_CXX_SOURCES}
+  }
   ${CXXFLAGS}
   ${CXX}
-}
-
-run {
-  exec { ${CC} -o test-generated-code ${LDFLAGS} test.pb-c.o generated-code/test-generated-code.o ${LIBPROTOBUF_C_A} }
-  consumes {
-    ${CC_OBJS}
-    ${LIBPROTOBUF_C_A} 
-  }
 }
 
 run {
@@ -132,8 +95,29 @@ run {
   produces {
     set {
       FULL_CXX_OUTPUT_INC
-      CC{generated-code2/test-full-cxx-output.inc} 
+        CC{generated-code2/test-full-cxx-output.inc} 
     }
+  }
+}
+
+cc {
+  set {_ 
+    generated-code/test-generated-code.c
+    generated-code2/test-generated-code2.c
+    ..${GEN_C_SOURCES}
+  }
+  ${CFLAGS}
+  ${CC}
+  consumes {
+    ${FULL_CXX_OUTPUT_INC}
+  }
+}
+
+run {
+  exec { ${CC} -o test-generated-code ${LDFLAGS} test.pb-c.o generated-code/test-generated-code.o ${LIBPROTOBUF_C_A} }
+  consumes {
+    ${CC_OBJS}
+    ${LIBPROTOBUF_C_A} 
   }
 }
 
@@ -155,32 +139,32 @@ run {
 }
 
 run {
-  exec { ${CC} -o test-issue220 ${LDFLAGS}
-    issue220/issue220.o
-    issue220/issue220.pb-c.o
-    ${LIBPROTOBUF_C_A}
+  shell { 
+    cp -f SS{generated-code/test-generated-code.c} CC{generated-code/test-generated-code3.c} 
   }
   consumes {
-    ${CC_OBJS}
-    ${LIBPROTOBUF_C_A}
+    SS{generated-code/test-generated-code.c} 
   }
   produces {
-    test-issue220
+    CC{generated-code/test-generated-code3.c}
+  }
+}
+
+cc {
+  CC{generated-code/test-generated-code3.c}
+  set{_ ..${CFLAGS} -DPROTO3}
+  ${CC}
+  consumes {
+    CC{test-proto3.pb-c.h}
+    CC{generated-code/test-generated-code3.c}
   }
 }
 
 run {
-  exec { ${CC} -o test-issue251 ${LDFLAGS}
-    issue251/issue251.o
-    issue251/issue251.pb-c.o
-    ${LIBPROTOBUF_C_A}
-  }
+  exec { ${CC} -o test-generated-code3 ${LDFLAGS} test-proto3.pb-c.o generated-code/test-generated-code3.o ${LIBPROTOBUF_C_A} }
   consumes {
     ${CC_OBJS}
-    ${LIBPROTOBUF_C_A}
-  }
-  produces {
-    test-issue251
+    ${LIBPROTOBUF_C_A} 
   }
 }
 
