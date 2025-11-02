@@ -119,6 +119,9 @@ run {
     ${CC_OBJS}
     ${LIBPROTOBUF_C_A} 
   }
+  produces {
+    test-generated-code 
+  }
 }
 
 run {
@@ -166,5 +169,25 @@ run {
     ${CC_OBJS}
     ${LIBPROTOBUF_C_A} 
   }
+  produces {
+    test-generated-code3 
+  }
 }
+
+if { ${PBC_RUN_TESTS}
+  run {
+    always
+    exec { test-generated-code }
+    exec { test-generated-code2 }
+    exec { test-generated-code3 }
+    consumes {
+      test-generated-code
+      test-generated-code2
+      test-generated-code3
+    }
+  }
+}
+
+include { ./Issues.autark }
+
 

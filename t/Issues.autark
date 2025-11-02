@@ -1,0 +1,65 @@
+macro {
+  M_TEST_ISSUE
+
+  set {
+    ISSUE_PREFIX
+    ^{&{1} / &{1}} 
+  }
+ 
+  run {
+    exec { 
+      ${PROTOBUF_PROTOC_EXEC} 
+      -I S{}
+      -I SS{}
+      --plugin ${PROTOC_GEN_C_EXEC} 
+      --c_out CC{}
+      ^{${ISSUE_PREFIX} .proto}
+    }
+    consumes {
+      ${PROTOC_GEN_C_EXEC}
+    }
+    produces {
+      ^{${ISSUE_PREFIX} .pb-c.h}
+      ^{${ISSUE_PREFIX} .pb-c.c}
+    }
+  }
+
+  cc {
+    set {_
+      CC{^{${ISSUE_PREFIX} .pb-c.c}}
+      ^{${ISSUE_PREFIX} .c}
+    }
+    ${CFLAGS}
+    ${CC}
+  }
+
+  run {
+    exec { ${CC} -o ${ISSUE_PREFIX} ${CC_OBJS} ${LIBPROTOBUF_C_A} }
+    consumes {
+      ${CC_OBJS}
+      ${LIBPROTOBUF_C_A}
+    }
+    produces {
+      ${ISSUE_PREFIX}
+    }
+  }
+
+  if { ${PBC_RUN_TESTS}
+    run {
+      always
+      exec { ${ISSUE_PREFIX} }
+      consumes {
+        ${ISSUE_PREFIX}
+      }
+    }
+  }
+}
+
+call { M_TEST_ISSUE issue220 }
+call { M_TEST_ISSUE issue251 }
+call { M_TEST_ISSUE issue204 }
+call { M_TEST_ISSUE issue330 }
+call { M_TEST_ISSUE issue375 }
+call { M_TEST_ISSUE issue440 }
+call { M_TEST_ISSUE issue745 }
+
