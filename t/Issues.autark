@@ -62,4 +62,5 @@ call { M_TEST_ISSUE issue330 }
 call { M_TEST_ISSUE issue375 }
 call { M_TEST_ISSUE issue440 }
 call { M_TEST_ISSUE issue745 }
+call { M_TEST_ISSUE issue476 }
 

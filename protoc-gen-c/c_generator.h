@@ -91,15 +91,15 @@ class PROTOBUF_C_EXPORT CGenerator : public google::protobuf::compiler::CodeGene
   bool Generate(const google::protobuf::FileDescriptor* file,
                 const std::string& parameter,
                 google::protobuf::compiler::OutputDirectory* output_directory,
-                std::string* error) const;
+                std::string* error) const override;
 
-#if GOOGLE_PROTOBUF_VERSION >= 5026000
+#if GOOGLE_PROTOBUF_VERSION >= 4025002
   uint64_t GetSupportedFeatures() const override {
     // Indicate that this code generator supports proto3 optional fields.
     return FEATURE_PROTO3_OPTIONAL;
   }
-  google::protobuf::Edition GetMinimumEdition() const { return google::protobuf::Edition::EDITION_PROTO2; }
-  google::protobuf::Edition GetMaximumEdition() const { return google::protobuf::Edition::EDITION_PROTO3; }
+  google::protobuf::Edition GetMinimumEdition() const override { return google::protobuf::Edition::EDITION_PROTO2; }
+  google::protobuf::Edition GetMaximumEdition() const override { return google::protobuf::Edition::EDITION_PROTO3; }
 #endif
 };
 
