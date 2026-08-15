@@ -31,7 +31,6 @@
 #include <google/protobuf/compiler/plugin.h>
 
 #include "c_generator.h"
-#include "c_helpers.h"
 #include "compat.h"
 #include "config.h"
 
