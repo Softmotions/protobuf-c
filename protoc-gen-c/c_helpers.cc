@@ -329,11 +329,13 @@ std::string FilenameIdentifier(compat::StringView filename) {
   return result;
 }
 
-std::string GetLabelName(google::protobuf::FieldDescriptor::Label label) {
-  switch (label) {
-    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL: return "optional";
-    case google::protobuf::FieldDescriptor::LABEL_REQUIRED: return "required";
-    case google::protobuf::FieldDescriptor::LABEL_REPEATED: return "repeated";
+std::string GetLabelName(const google::protobuf::FieldDescriptor* d) {
+  if (d->is_required()) {
+    return "required";
+  } else if (d->is_repeated()) {
+    return "repeated";
+  } else {
+    return "optional";
   }
   return "bad-label";
 }

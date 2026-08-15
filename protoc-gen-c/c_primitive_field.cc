@@ -109,21 +109,19 @@ void PrimitiveFieldGenerator::GenerateStructMembers(google::protobuf::io::Printe
   vars["name"] = FieldName(descriptor_);
   vars["deprecated"] = FieldDeprecated(descriptor_);
 
-  switch (descriptor_->label()) {
-    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
-      printer->Print(vars, "$c_type$ $name$$deprecated$;\n");
-      break;
-    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
-      if (descriptor_->real_containing_oneof() == NULL && descriptor_->has_presence())
-        printer->Print(vars, "protobuf_c_boolean has_$name$$deprecated$;\n");
-      printer->Print(vars, "$c_type$ $name$$deprecated$;\n");
-      break;
-    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
-      printer->Print(vars, "size_t n_$name$$deprecated$;\n");
-      printer->Print(vars, "$c_type$ *$name$$deprecated$;\n");
-      break;
+  if (descriptor_->is_required()) {
+    printer->Print(vars, "$c_type$ $name$$deprecated$;\n");
+  } else if (descriptor_->is_repeated()) {
+    printer->Print(vars, "size_t n_$name$$deprecated$;\n");
+    printer->Print(vars, "$c_type$ *$name$$deprecated$;\n");
+  } else {
+    if (descriptor_->real_containing_oneof() == NULL && descriptor_->has_presence()) {
+      printer->Print(vars, "protobuf_c_boolean has_$name$$deprecated$;\n");
+    }
+    printer->Print(vars, "$c_type$ $name$$deprecated$;\n");
   }
 }
+
 std::string PrimitiveFieldGenerator::GetDefaultValue() const
 {
   /* XXX: SimpleItoa seems woefully inadequate for anything but int32,
@@ -148,6 +146,7 @@ std::string PrimitiveFieldGenerator::GetDefaultValue() const
       return "UNEXPECTED_CPPTYPE";
   }
 }
+
 void PrimitiveFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* printer) const
 {
   std::map<std::string, std::string> vars;
@@ -156,18 +155,16 @@ void PrimitiveFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* 
   } else {
     vars["default_value"] = "0";
   }
-  switch (descriptor_->label()) {
-    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
-      printer->Print(vars, "$default_value$");
-      break;
-    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
-      if (descriptor_->has_presence())
-        printer->Print(vars, "0, ");
-      printer->Print(vars, "$default_value$");
-      break;
-    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
-      printer->Print("0,NULL");
-      break;
+  
+  if (descriptor_->is_required()) {
+    printer->Print(vars, "$default_value$");
+  } else if (descriptor_->is_repeated()) {
+    printer->Print("0,NULL");
+  } else {
+    if (descriptor_->has_presence()) {
+      printer->Print(vars, "0, ");
+    }
+    printer->Print(vars, "$default_value$");
   }
 }
 

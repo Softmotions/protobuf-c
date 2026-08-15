@@ -94,29 +94,28 @@ void StringFieldGenerator::GenerateStructMembers(google::protobuf::io::Printer* 
 {
   const ProtobufCFileOptions opt = descriptor_->file()->options().GetExtension(pb_c_file);
 
-  switch (descriptor_->label()) {
-    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
-    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
-      if (descriptor_->real_containing_oneof() == NULL &&
-          descriptor_->has_presence()) {
-        printer->Print(variables_, "protobuf_c_boolean has_$name$$deprecated$;\n");
-      }
-      if (opt.const_strings())
-        printer->Print(variables_, "const ");
-      printer->Print(variables_, "char *$name$$deprecated$;\n");
-      break;
-    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
-      printer->Print(variables_, "size_t n_$name$$deprecated$;\n");
-      if (opt.const_strings())
-        printer->Print(variables_, "const ");
-      printer->Print(variables_, "char **$name$$deprecated$;\n");
-      break;
+  if (descriptor_->is_repeated()) {
+    printer->Print(variables_, "size_t n_$name$$deprecated$;\n");
+    if (opt.const_strings()) {
+      printer->Print(variables_, "const ");
+    }
+    printer->Print(variables_, "char **$name$$deprecated$;\n");
+  } else {
+    if (descriptor_->real_containing_oneof() == NULL && descriptor_->has_presence()) {
+      printer->Print(variables_, "protobuf_c_boolean has_$name$$deprecated$;\n");
+    }
+    if (opt.const_strings()) {
+      printer->Print(variables_, "const ");
+    }
+    printer->Print(variables_, "char *$name$$deprecated$;\n");
   }
-}
+ }
+
 void StringFieldGenerator::GenerateDefaultValueDeclarations(google::protobuf::io::Printer* printer) const
 {
   printer->Print(variables_, "extern char $default$[];\n");
 }
+
 void StringFieldGenerator::GenerateDefaultValueImplementations(google::protobuf::io::Printer* printer) const
 {
   std::map<std::string, std::string> vars;
@@ -129,6 +128,7 @@ std::string StringFieldGenerator::GetDefaultValue(void) const
 {
   return variables_.find("default")->second;
 }
+
 void StringFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* printer) const
 {
   std::map<std::string, std::string> vars;
@@ -142,18 +142,16 @@ void StringFieldGenerator::GenerateStaticInit(google::protobuf::io::Printer* pri
   } else {
     vars["default"] = "(char *)protobuf_c_empty_string";
   }
-  switch (descriptor_->label()) {
-    case google::protobuf::FieldDescriptor::LABEL_REQUIRED:
-    case google::protobuf::FieldDescriptor::LABEL_OPTIONAL:
-      if (descriptor_->real_containing_oneof() == NULL && descriptor_->has_presence())
-        printer->Print(variables_, "0, ");
-      printer->Print(vars, "$default$");
-      break;
-    case google::protobuf::FieldDescriptor::LABEL_REPEATED:
-      printer->Print(vars, "0,NULL");
-      break;
+  if (descriptor_->is_repeated()) {
+    printer->Print(vars, "0,NULL");
+  } else {
+    if (descriptor_->real_containing_oneof() == NULL && descriptor_->has_presence()) {
+      printer->Print(variables_, "0, ");
+    }
+    printer->Print(vars, "$default$");
   }
-}
+ }
+
 void StringFieldGenerator::GenerateDescriptorInitializer(google::protobuf::io::Printer* printer) const
 {
   GenerateDescriptorInitializerGeneric(printer, true, "STRING", "NULL");

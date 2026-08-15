@@ -151,7 +151,7 @@ const char* DeclaredTypeMethodName(google::protobuf::FieldDescriptor::Type type)
 std::string FilenameIdentifier(compat::StringView filename);
 
 // return 'required', 'optional', or 'repeated'
-std::string GetLabelName(google::protobuf::FieldDescriptor::Label label);
+std::string GetLabelName(const google::protobuf::FieldDescriptor *label);
 
 // write IntRanges entries for a bunch of sorted values.
 // returns the number of ranges there are to bsearch.
