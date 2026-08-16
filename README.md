@@ -1,3 +1,5 @@
+## NOTE: Tested only with libprotoc v35+ earlier versions may not work.
+
 ## Overview
 
 This is `protobuf-c`, a C implementation of the [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) data serialization format. It includes `libprotobuf-c`, a pure C library that implements protobuf encoding and decoding, and `protoc-gen-c`, a code generator plugin for `protoc` that converts Protocol Buffer `.proto` files to C descriptor code. `protobuf-c` formerly included an RPC implementation; that code has been split out into the [protobuf-c-rpc](https://github.com/protobuf-c/protobuf-c-rpc) project.

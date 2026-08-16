@@ -63,7 +63,6 @@
 
 #include <algorithm>
 #include <map>
-#include <string_view>
 #include <tuple>
 #include <vector>
 
@@ -178,8 +177,9 @@ GenerateStructDefinition(google::protobuf::io::Printer* printer) {
   }
 
   google::protobuf::SourceLocation msgSourceLoc;
-  descriptor_->GetSourceLocation(&msgSourceLoc);
-  PrintComment (printer, msgSourceLoc.leading_comments);
+  if (descriptor_->GetSourceLocation(&msgSourceLoc)) {
+    PrintComment (printer, msgSourceLoc.leading_comments);
+  }
 
   const ProtobufCMessageOptions opt =
 	  descriptor_->options().GetExtension(pb_c_msg);
@@ -196,10 +196,10 @@ GenerateStructDefinition(google::protobuf::io::Printer* printer) {
     const google::protobuf::FieldDescriptor* field = descriptor_->field(i);
     if (field->real_containing_oneof() == NULL) {
       google::protobuf::SourceLocation fieldSourceLoc;
-      field->GetSourceLocation(&fieldSourceLoc);
-
-      PrintComment (printer, fieldSourceLoc.leading_comments);
-      PrintComment (printer, fieldSourceLoc.trailing_comments);
+      if (field->GetSourceLocation(&fieldSourceLoc)) {
+        PrintComment (printer, fieldSourceLoc.leading_comments);
+        PrintComment (printer, fieldSourceLoc.trailing_comments);
+      }
       field_generators_.get(field).GenerateStructMembers(printer);
     }
   }
@@ -229,10 +229,10 @@ GenerateStructDefinition(google::protobuf::io::Printer* printer) {
     for (const auto& tuple : sorted_fds) {
       const auto& [order, name, field] = tuple;
       google::protobuf::SourceLocation fieldSourceLoc;
-      field->GetSourceLocation(&fieldSourceLoc);
-
-      PrintComment(printer, fieldSourceLoc.leading_comments);
-      PrintComment(printer, fieldSourceLoc.trailing_comments);
+      if (field->GetSourceLocation(&fieldSourceLoc)) {
+        PrintComment(printer, fieldSourceLoc.leading_comments);
+        PrintComment(printer, fieldSourceLoc.trailing_comments);
+      }
       field_generators_.get(field).GenerateStructMembers(printer);
     }
 

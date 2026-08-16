@@ -85,8 +85,9 @@ void EnumGenerator::GenerateDefinition(google::protobuf::io::Printer* printer) {
   vars["uc_name"] = FullNameToUpper(descriptor_->full_name(), descriptor_->file());
 
   google::protobuf::SourceLocation sourceLoc;
-  descriptor_->GetSourceLocation(&sourceLoc);
-  PrintComment (printer, sourceLoc.leading_comments);
+  if (descriptor_->GetSourceLocation(&sourceLoc)) {
+    PrintComment (printer, sourceLoc.leading_comments);
+  }
 
   printer->Print(vars, "typedef enum _$classname$ {\n");
   printer->Indent();
@@ -104,10 +105,11 @@ void EnumGenerator::GenerateDefinition(google::protobuf::io::Printer* printer) {
       vars["opt_comma"] = "";
 
     google::protobuf::SourceLocation valSourceLoc;
-    descriptor_->value(i)->GetSourceLocation(&valSourceLoc);
+    if (descriptor_->value(i)->GetSourceLocation(&valSourceLoc)) {
+      PrintComment (printer, valSourceLoc.leading_comments);
+      PrintComment (printer, valSourceLoc.trailing_comments);
+    }
 
-    PrintComment (printer, valSourceLoc.leading_comments);
-    PrintComment (printer, valSourceLoc.trailing_comments);
     printer->Print(vars, "$prefix$$name$ = $number$$opt_comma$\n");
 
     if (descriptor_->value(i)->number() < min_value->number()) {
