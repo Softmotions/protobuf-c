@@ -1,3 +1,7 @@
+# [1.5.4]
+
+* Upgraded to libprotoc v35+
+
 # [1.5.3] 
 
 * Merged `support optional keyword & presence checker (has_ booleans)` https://github.com/protobuf-c/protobuf-c/pull/781
