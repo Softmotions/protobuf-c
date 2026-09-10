@@ -1,6 +1,13 @@
+check {
+  changelog_md.sh { S{CHANGELOG.md} }
+  system.sh
+  protobuf-c.sh
+}
+
+
 meta {
   name { protobuf-c }
-  version { 1.5.4 }
+  version { ${CHANGELOG_VERSION} }
   description { Protocol Buffers implementation in C }
   website { https://github.com/Softmotions/protobuf-c }
 }
@@ -34,10 +41,6 @@ env {
   C{${INSTALL_PKGCONFIG_DIR}}
 }
 
-check {
-  system.sh
-  protobuf-c.sh
-}
 
 if { ${SYSTEM_BIGENDIAN} 
   set {
